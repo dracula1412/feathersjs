@@ -1,5 +1,6 @@
 const feathers = require('@feathersjs/feathers');
 const express = require('@feathersjs/express');
+const socketio = require('@feathersjs/socketio');
 const memory = require('feathers-memory');
 
 const app = express(feathers());
@@ -10,8 +11,15 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
 // Set up REST transport using Express
 app.configure(express.rest());
-// Set up an error handler that gives us nicer errors
-app.use(express.errorHandler());
+
+// Configure the Socket.io transport
+app.configure(socketio());
+
+// On any real-time connection, add it to the `everybody` channel
+app.on('connection', connection => app.channel('everybody').join(connection));
+
+// Publish all events to the `everybody` channel
+app.publish(() => app.channel('everybody'));
 
 // Initialize the messages service
 app.use('messages', memory({
@@ -20,6 +28,9 @@ app.use('messages', memory({
     max: 25
   }
 }));
+
+// Set up an error handler that gives us nicer errors
+app.use(express.errorHandler());
 
 // Start the server on port 3030
 const server = app.listen(3030);

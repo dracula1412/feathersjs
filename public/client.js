@@ -1,24 +1,19 @@
-const app = feathers();
+/* global io */
 
-// Register a simple todo service that return the name and a text
-app.use('todos', {
-  async get(name) {
-    return {
-      name,
-      text: `You have to do ${name}`
-    };
-  }
+// Create a websocket connecting to our Feathers server
+const socket = io('http://localhost:3030');
+
+// Listen to new messages being created
+socket.on('messages created', message =>
+  console.log('Someone created a message', message)
+);
+
+socket.emit('create', 'messages', {
+  text: 'Hello from socket'
+}, (error, result) => {
+  if (error) throw error
+  socket.emit('find', 'messages', (error, messageList) => {
+    if (error) throw error
+    console.log('Current messages', messageList);
+  });
 });
-
-// A function that gets and logs a todo from the service
-async function getTodo(name) {
-  // Get the service we registered above
-  const service = app.service('todos');
-  // Call the `get` method with a name
-  const todo = await service.get(name);
-
-  // Log the todo we got back
-  console.log(todo);
-}
-
-getTodo('dishes');
